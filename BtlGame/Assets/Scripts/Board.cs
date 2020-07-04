@@ -14,22 +14,23 @@ public class Board : MonoBehaviour
         public int generation = 0;
     }
 
+    // hàm xử lý va chạm bóng
     public class BubbleCollision
     {
         public Vector2 grid;
-        public bool isSticking;
-        public Vector2 collidingPointNormal;
+        public bool isSticking;  // ktra có gắn với nhau không
+        public Vector2 collidingPointNormal; // điểm va chạm
     }
 
     public Bubble.BubbleType[] bubbleTypes;
 
-    public int bubblesPerRow = 9;
-    public int boardHeightInBubbleRows = 13;
+    public int bubblesPerRow = 6;  // số bóng trên 1 dòng
+    public int boardHeightInBubbleRows = 10;
     public float bubbleRadius = 0.5f;
-    public float bubbleShootingSpeed = 2f;
-    public int bubbleChainThreshold = 3;
+    public float bubbleShootingSpeed = 3f; // tốc độ bắn
+    public int bubbleChainThreshold = 3; // số bóng cùng màu 
     public float dropTo = -5f;
-    public float dropSpeed = 15f;
+    public float dropSpeed = 15f;  // tốc độ rơi
 
     public GameObject canon;
 
@@ -44,7 +45,7 @@ public class Board : MonoBehaviour
     private float topBoarder = 0.0f;
     private float bottomBoarder;
 
-    private float collideThreshold = 0.95f;
+    private float collideThreshold = 0.95f; // ngưỡng va chạm
 
     private bool canShoot = true;
     private Bubble nextBubble;
@@ -99,11 +100,11 @@ public class Board : MonoBehaviour
     {
 
         var row = 0;
-        for(var j=0; j<6;j++)
+        for(var j=0; j<4;j++)
         {
 
             var col = 0;
-            for (var i = 0; i < 8 && col < bubblesPerRow; ++i, ++col)
+            for (var i = 0; i < 9 && col < bubblesPerRow; ++i, ++col)
             {
 
                 var bubble_type_idx = Random.Range(0, 6);
