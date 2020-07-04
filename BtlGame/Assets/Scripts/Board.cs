@@ -103,7 +103,7 @@ public class Board : MonoBehaviour
         {
 
             var col = 0;
-            for (var i = 0; i < 8 && col < bubblesPerRow; ++i, ++col)
+            for (var i = 0; i < bubblesPerRow && col < bubblesPerRow; ++i, ++col)
             {
 
                 var bubble_type_idx = Random.Range(0, 6);
@@ -136,7 +136,7 @@ public class Board : MonoBehaviour
             }
         }
     }
-
+    //khởi tạo trứng
     private Bubble GenerateBubble(int type_idx = -1)
     {
         if (type_idx < 0)
@@ -157,23 +157,21 @@ public class Board : MonoBehaviour
         currentBubble = bubble;
         StartCoroutine(ShootImpl(dir, bubble));
     }
-
+    //chuyển từ vector2 sang vector3
     private Vector3 Hex2Cube(Vector2 hex_coordinate)
     {
         return new Vector3(hex_coordinate.x, -hex_coordinate.x - hex_coordinate.y, hex_coordinate.y);
     }
 
-    private Vector2 Cube2Hex(Vector3 cube_coordinate)
-    {
-        return new Vector2(cube_coordinate.x, cube_coordinate.z);
-    }
 
     private Vector3 CubeRound(Vector3 cube_coordinate)
     {
+        //làm tròn
         var rx = Mathf.Round(cube_coordinate.x);
         var ry = Mathf.Round(cube_coordinate.y);
         var rz = Mathf.Round(cube_coordinate.z);
 
+        //lấy giá trị tuyệt đối
         var x_diff = Mathf.Abs(rx - cube_coordinate.x);
         var y_diff = Mathf.Abs(ry - cube_coordinate.y);
         var z_diff = Mathf.Abs(rz - cube_coordinate.z);
@@ -193,12 +191,7 @@ public class Board : MonoBehaviour
 
         return new Vector3(rx, ry, rz);
     }
-
-    private Vector2 HexRound(Vector2 hex_coordinate)
-    {
-        return Cube2Hex(CubeRound(Hex2Cube(hex_coordinate)));
-    }
-
+    //Lấy ra vector3 từ vị trí trên màn hình "chắc thế"
     private Vector3 Local2Cube(Vector2 local_coordinate)
     {
         local_coordinate.x = local_coordinate.x - bubbleRadius;
@@ -216,11 +209,13 @@ public class Board : MonoBehaviour
             cube_coordinate.z);
     }
 
+    //Lấy ra grid từ vị trí trên màn hình
     private Vector2 Local2Grid(Vector2 local_coordinate)
     {
         return Cube2Grid(Local2Cube(local_coordinate));
     }
 
+    //Lấy vị trí của grid trên màn hình "chắc thế"
     private Vector2 Grid2Local(Vector2 grid_coordinate)
     {
         var x = hexagonSize * Mathf.Sqrt(3) * (grid_coordinate.x + 0.5 * ((int)grid_coordinate.y & 1));
@@ -228,7 +223,7 @@ public class Board : MonoBehaviour
 
         return new Vector2((float)x + bubbleRadius, -y - hexagonSize);
     }
-
+    //Lấy vị trí chỉ mục trong grid
     private int Grid2Index(Vector2 grid_coordinate)
     {
         return (int)(grid_coordinate.x + grid_coordinate.y * bubblesPerRow);
@@ -262,14 +257,9 @@ public class Board : MonoBehaviour
                     grid = Local2Grid(current)
                 };
             }
-
+            
             if (CollisionTest(current, dir, out result))
             {
-                if (Local2Grid(start) == Local2Grid(Grid2Local(result.grid)))
-                {
-                    Debug.Log("!!!");
-                }
-
                 return result;
             }
         }
@@ -280,6 +270,7 @@ public class Board : MonoBehaviour
         return index >= 0 && index < slots.Length;
     }
 
+    // kiểm tra va trạm
     private bool CollisionTest(Vector3 local, Vector2 dir, out BubbleCollision collision)
     {
         var grid_coordinate = Local2Grid(local);
@@ -289,7 +280,6 @@ public class Board : MonoBehaviour
             neighbourGridOffsetsForEvenRow : neighbourGridOffsetsForOddRow;
 
         var potential_collisions = new List<KeyValuePair<Vector2, float>>();
-        var p2 = new List<KeyValuePair<Vector2, float>>();
 
         foreach (var offset in neighbourGridOffsets)
         {
@@ -301,25 +291,29 @@ public class Board : MonoBehaviour
             {
                 potential_collisions.Add(new KeyValuePair<Vector2, float>(neighbour_grid_coord,
                     distance_between_bubble_and_neighbour));
-                p2.Add(new KeyValuePair<Vector2, float>(neighbour_local_coord, distance_between_bubble_and_neighbour));
             }
         }
 
         var prioritized_potential_colliders_grid = potential_collisions.OrderBy(t => t.Value).Select(t => t.Key).ToArray();
-        var p22 = p2.OrderBy(t => t.Value).Select(t => t.Key).ToArray();
+
 
         foreach (var potential_collider_grid in prioritized_potential_colliders_grid)
         {
+            //tính điểm va trạm vào quả trứng khác
             var is_colliding_with_upper_wall = potential_collider_grid.y < 0.0f;
+
+            //tính điểm va trạm vào tường bên trái
             var is_colliding_with_left_wall = potential_collider_grid.x < 0.0f && dir.x < 0.0f;
+            //tính điểm va trạm vào tường bên phải
             var is_colliding_with_right_wall = potential_collider_grid.x >= bubblesPerRow && dir.x > 0.0f;
             var is_colliding_with_side_walls = is_colliding_with_left_wall || is_colliding_with_right_wall;
 
             var slot_index = Grid2Index(potential_collider_grid);
 
+            // 
             if (is_colliding_with_side_walls)
             {
-                // Colliding with a wall...
+                // Va trạm với tường
                 collision = new BubbleCollision
                 {
                     isSticking = false,
@@ -331,7 +325,7 @@ public class Board : MonoBehaviour
             }
             else if (is_colliding_with_upper_wall || IsSlotIndexValid(slot_index) && slots[slot_index].bubble != null)
             {
-                // Colliding with another bubble...
+                // va trạm với trứng khác
                 collision = new BubbleCollision
                 {
                     isSticking = true,
@@ -345,29 +339,7 @@ public class Board : MonoBehaviour
 
         return false;
     }
-
-    public void OnDrawGizmos()
-    {
-        Gizmos.color = Color.green;
-
-        for (int i = 0; i < bubblesPerRow; ++i)
-        {
-            for (int j = 0; j < boardHeightInBubbleRows; ++j)
-            {
-                var local = Grid2Local(new Vector2(i, j));
-                Gizmos.DrawWireSphere(local + (Vector2)transform.position, bubbleRadius);
-            }
-        }
-
-        if (currentBubble != null)
-        {
-            var grid = Local2Grid(currentBubble.transform.localPosition);
-            var normalized_local_for_current_bubble = Grid2Local(grid);
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(normalized_local_for_current_bubble + (Vector2)transform.position, bubbleRadius);
-        }
-    }
-
+    
     private IEnumerator MoveTo(Transform obj, Vector2 target, float speed)
     {
         while ((Vector2)obj.localPosition != target)
@@ -381,6 +353,7 @@ public class Board : MonoBehaviour
         yield break;
     }
 
+    //Lấy những quả trứng cùng màu 
     private List<BubbleSlot> CollectChainedBubbleSlots(int starting_col, int starting_row, Bubble.BubbleType chaining_type)
     {
         var chained_bubble_slots = new List<BubbleSlot>();
@@ -393,7 +366,8 @@ public class Board : MonoBehaviour
 
         return chained_bubble_slots;
     }
-
+    
+    //Lấy những quả trứng bị nằm trong cụm
     private IEnumerable<BubbleSlot> CollectDroppingBubbleSlots(int next_bubble_generation)
     {
         for (int col = 0; col < bubblesPerRow; ++col)
@@ -411,14 +385,18 @@ public class Board : MonoBehaviour
         return dropping_bubble_slots;
     }
 
+    //hủy trứng
     private IEnumerator Explode(Bubble bubble)
     {
         Destroy(bubble.gameObject);
         yield break;
     }
-
+    /*
+        Làm rơi trứng những quả trứng quả rồi hủy
+    */
     private IEnumerator Drop(Bubble bubble)
     {
+        // nếu y mà lớn hơn dropto=-5 thì làm hiệu ứng rơi
         while (bubble.transform.position.y > dropTo)
         {
             bubble.transform.position = Vector2.MoveTowards(bubble.transform.position, 
@@ -426,7 +404,7 @@ public class Board : MonoBehaviour
 
             yield return null;
         }
-
+        // sau đó hủy quả trứng
         Destroy(bubble.gameObject);
         yield break;
     }
@@ -444,7 +422,10 @@ public class Board : MonoBehaviour
 
         var current_waypoint = (Vector2)bubble.transform.localPosition;
         waypoints.Add(Grid2Local(collision.grid));
-
+        
+        //cập nhật lại collsiton nếu collsion từng gắn kết
+        // không hiểu đoạn này lắm 
+        //nói chung là nếu ko có đoạn này thì sau khi cụm bóng bị xóa thì bắn bóng vào cụm này sẽ bug vướng bóng tại vị trị cụm đã bị xóa
         while (!collision.isSticking)
         {
             dir = Vector2.Reflect((waypoints.Last() - current_waypoint).normalized, collision.collidingPointNormal);
@@ -453,61 +434,56 @@ public class Board : MonoBehaviour
             waypoints.Add(Grid2Local(collision.grid));
         }
 
-        if (!collision.isSticking)
+        
+        //xét board trứng nhỏ hơn 13
+        if (collision.grid.y < boardHeightInBubbleRows)
         {
-            var start = bubble.transform.localPosition;
+            slots[Grid2Index(collision.grid)].bubble = bubble;
+            slots[Grid2Index(collision.grid)].generation = currentBubbleGeneration;
 
-            foreach (var end in waypoints)
+            // Lấy những quả bóng cùng màu bị bắn trúng
+            var chained_bubble_slots = CollectChainedBubbleSlots((int)collision.grid.x, (int)collision.grid.y, bubble.type);
+
+            // nếu những quả bóng cùng màu lớn hơn 3
+            if (chained_bubble_slots.Count >= bubbleChainThreshold)
             {
-                Debug.DrawLine(transform.position + start, transform.position + (Vector3)end, Color.cyan, 5.0f);
-                start = end;
-            }
-
-            canShoot = true;
-
-            yield break;
-        }
-        else
-        {
-            if (collision.grid.y < boardHeightInBubbleRows)
-            {
-                slots[Grid2Index(collision.grid)].bubble = bubble;
-                slots[Grid2Index(collision.grid)].generation = currentBubbleGeneration;
-
-                var chained_bubble_slots = CollectChainedBubbleSlots((int)collision.grid.x, (int)collision.grid.y, bubble.type);
-
-                if (chained_bubble_slots.Count >= bubbleChainThreshold)
+                // lấy quả bóng cùng màu gán vào mảng chained_bubble
+                foreach (var slot in chained_bubble_slots)
                 {
-                    foreach (var slot in chained_bubble_slots)
-                    {
-                        chained_bubbles.Add(slot.bubble);
-                        slot.bubble = null;
-                    }
+                    chained_bubbles.Add(slot.bubble);
+                    slot.bubble = null;
+                }
 
-                    var dropping_bubble_slots = CollectDroppingBubbleSlots(++currentBubbleGeneration);
-                    foreach (var slot in dropping_bubble_slots)
-                    {
-                        dropping_bubbles.Add(slot.bubble);
-                        slot.bubble = null;
-                    }
+                /*
+                    lấy ra những quả bóng mà nằm trong cụm bóng gán vào biến dropping_bubble_slots rồi duyệt mảng rồi gán nó vào mảng dropping_bubbles
+                */
+                var dropping_bubble_slots = CollectDroppingBubbleSlots(++currentBubbleGeneration);
+                foreach (var slot in dropping_bubble_slots)
+                {
+                    dropping_bubbles.Add(slot.bubble);
+                    slot.bubble = null;
                 }
             }
-            else
-            {
-                Debug.Log("You lose!");
-            }
-        }
+        }//board trứng lớn hơn 13 thì thua cuộc sẽ xử lý hiện ra bảng thua ở đây
+        else
+        {
 
+            Debug.Log("You lose!");
+        }
+        
+        
+        //đường đi của quả trứng 
         foreach (var current_end in waypoints)
         {
             yield return StartCoroutine(MoveTo(bubble.transform, current_end, bubbleShootingSpeed));
         }
 
+        // gọi hàm hủy những quả bóng cùng màu trong mảng chained_bubbles
         foreach (var cb in chained_bubbles)
         {
             StartCoroutine(Explode(cb));
         }
-
+        // gọi hàm hủy những quả trứng trong mảng dropping_bubbles
         foreach (var db in dropping_bubbles)
         {
             StartCoroutine(Drop(db));
@@ -518,6 +494,7 @@ public class Board : MonoBehaviour
         yield break;
     }
 
+    //đổi trứng
     private void ReloadCanon()
     {
         nextBubble = GenerateBubble();
@@ -527,13 +504,17 @@ public class Board : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // lấy vị trí click chuột
         if (Input.GetMouseButtonDown(0))
         {
             if (canShoot)
             {
+                // điểm kích chuột
                 var click_position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                //vị trí của súng cao su
                 var canon_position = canon.transform.position;
 
+                //vị trí đích
                 var fire_direction = click_position - canon_position;
 
                 if (fire_direction.y > 0.0f)
