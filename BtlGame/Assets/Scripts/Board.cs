@@ -23,6 +23,8 @@ public class Board : MonoBehaviour
 
     public Bubble.BubbleType[] bubbleTypes;
 
+    public int screenNum = 0;
+    public int numType = 6;
     public int bubblesPerRow = 9;
     public int boardHeightInBubbleRows = 13;
     public float bubbleRadius = 0.5f;
@@ -34,6 +36,10 @@ public class Board : MonoBehaviour
     public GameObject canon;
 
     public Bubble bubblePrefab;
+
+    public GameObject GameOverGUI;
+
+    public GameObject PlayGUI;
 
     private int currentBubbleGeneration = 0;
 
@@ -101,22 +107,43 @@ public class Board : MonoBehaviour
         var row = 0;
         for(var j=0; j<6;j++)
         {
-
+            
             var col = 0;
+
             for (var i = 0; i < bubblesPerRow && col < bubblesPerRow; ++i, ++col)
             {
-
-                var bubble_type_idx = Random.Range(0, 6);
-                if (bubble_type_idx >= 0 && bubble_type_idx < bubbleTypes.Length)
+                if (screenNum == 0)
                 {
-                    var bubble = GenerateBubble(bubble_type_idx);
-                    var slot_idx = col + row * bubblesPerRow;
+                    var bubble_type_idx = Random.Range(0, numType);
+                    if (bubble_type_idx >= 0 && bubble_type_idx < bubbleTypes.Length)
+                    {
+                        var bubble = GenerateBubble(bubble_type_idx);
+                        var slot_idx = col + row * bubblesPerRow;
 
-                    slots[slot_idx].bubble = bubble;
+                        slots[slot_idx].bubble = bubble;
+                    }
+                }else if (screenNum == 1)
+                {
+                    if (i % 2 == 0)
+                    {
+                        var bubble_type_idx = Random.Range(0, numType);
+                        if (bubble_type_idx >= 0 && bubble_type_idx < bubbleTypes.Length)
+                        {
+                            var bubble = GenerateBubble(bubble_type_idx);
+                            var slot_idx = col + row * bubblesPerRow;
+
+                            slots[slot_idx].bubble = bubble;
+                        }
+                    }
                 }
+                
+                
+
             }
 
             row++;
+            
+            
         }
     }
 
@@ -302,9 +329,10 @@ public class Board : MonoBehaviour
             //tính điểm va trạm vào quả trứng khác
             var is_colliding_with_upper_wall = potential_collider_grid.y < 0.0f;
 
-            //tính điểm va trạm vào tường bên trái
+            //is_colliding_with_left_wall true nếu điểm va trạm vào tường bên trái
             var is_colliding_with_left_wall = potential_collider_grid.x < 0.0f && dir.x < 0.0f;
-            //tính điểm va trạm vào tường bên phải
+
+            //is_colliding_with_right_wall true điểm va trạm vào tường bên phải
             var is_colliding_with_right_wall = potential_collider_grid.x >= bubblesPerRow && dir.x > 0.0f;
             var is_colliding_with_side_walls = is_colliding_with_left_wall || is_colliding_with_right_wall;
 
@@ -319,6 +347,7 @@ public class Board : MonoBehaviour
                     isSticking = false,
                     grid = grid_coordinate,
                     collidingPointNormal = is_colliding_with_left_wall ? Vector2.right : Vector2.left
+
                 };
 
                 return true;
@@ -428,6 +457,8 @@ public class Board : MonoBehaviour
         //nói chung là nếu ko có đoạn này thì sau khi cụm bóng bị xóa thì bắn bóng vào cụm này sẽ bug vướng bóng tại vị trị cụm đã bị xóa
         while (!collision.isSticking)
         {
+            //gán dir = Vector2.Reflect
+            //reflect trả về dội ngược lại của vector tùy theo collidingPointNormal là left, right hay 0
             dir = Vector2.Reflect((waypoints.Last() - current_waypoint).normalized, collision.collidingPointNormal);
             collision = BubbleMarching(waypoints.Last(), dir, bubbleRadius);
             current_waypoint = waypoints.Last();
@@ -467,10 +498,14 @@ public class Board : MonoBehaviour
         }//board trứng lớn hơn 13 thì thua cuộc sẽ xử lý hiện ra bảng thua ở đây
         else
         {
-
+            GameOverGUI.SetActive(true);
             Debug.Log("You lose!");
         }
-        
+        if (collision.grid.y==0 )
+        {
+            PlayGUI.SetActive(true);
+            Debug.Log("You win!");
+        }
         
         //đường đi của quả trứng 
         foreach (var current_end in waypoints)
@@ -504,6 +539,7 @@ public class Board : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        
         // lấy vị trí click chuột
         if (Input.GetMouseButtonDown(0))
         {
@@ -526,5 +562,6 @@ public class Board : MonoBehaviour
                 }
             }
         }
+        
     }
 }

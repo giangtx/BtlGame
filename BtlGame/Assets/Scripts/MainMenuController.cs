@@ -8,4 +8,13 @@ public class MainMenuController : MonoBehaviour
     {
         Application.LoadLevel("Main");
     }
+    public void Screan2()
+    {
+        Application.LoadLevel("Main2");
+    }
+    public void Screan3()
+    {
+        Application.LoadLevel("Main3");
+    }
+
 }
