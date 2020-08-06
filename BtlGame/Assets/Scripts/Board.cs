@@ -5,6 +5,8 @@ using System.Linq;
 using System.IO;
 using System;
 using Random = UnityEngine.Random;
+using UnityEngine.UI;
+using UnityEditorInternal;
 
 public class Board : MonoBehaviour
 {
@@ -78,9 +80,14 @@ public class Board : MonoBehaviour
         }
     }
 
+    public Text score;
+    int scores = 0;
+    int numBubble = 0;
+
     // Use this for initialization
     void Start()
     {
+        //score = GetComponent<Text>();
         slots = new BubbleSlot[bubblesPerRow * boardHeightInBubbleRows];
         for (var i = 0; i < slots.Length; ++i)
         {
@@ -478,11 +485,14 @@ public class Board : MonoBehaviour
             // nếu những quả bóng cùng màu lớn hơn 3
             if (chained_bubble_slots.Count >= bubbleChainThreshold)
             {
+                var count = 0;
+                var same = 0;
                 // lấy quả bóng cùng màu gán vào mảng chained_bubble
                 foreach (var slot in chained_bubble_slots)
                 {
                     chained_bubbles.Add(slot.bubble);
                     slot.bubble = null;
+                    count++;
                 }
 
                 /*
@@ -493,7 +503,10 @@ public class Board : MonoBehaviour
                 {
                     dropping_bubbles.Add(slot.bubble);
                     slot.bubble = null;
+                    same++;
                 }
+                var total = (count - 1) + same;
+                scores += total;
             }
         }//board trứng lớn hơn 13 thì thua cuộc sẽ xử lý hiện ra bảng thua ở đây
         else
@@ -501,11 +514,11 @@ public class Board : MonoBehaviour
             GameOverGUI.SetActive(true);
             Debug.Log("You lose!");
         }
-        if (collision.grid.y==0 )
-        {
-            PlayGUI.SetActive(true);
-            Debug.Log("You win!");
-        }
+        //if (collision.grid.y==0 )
+        //{
+        //    PlayGUI.SetActive(true);
+        //    Debug.Log("You win!");
+        //}
         
         //đường đi của quả trứng 
         foreach (var current_end in waypoints)
@@ -539,7 +552,14 @@ public class Board : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        
+        numBubble = GameObject.FindGameObjectsWithTag("bong").Length;
+        Debug.Log("egg: " + numBubble );
+        if (numBubble <= 1)
+        {
+            PlayGUI.SetActive(true);
+            Debug.Log("You win!");
+        }
+        score.text = "score: " + scores;
         // lấy vị trí click chuột
         if (Input.GetMouseButtonDown(0))
         {
